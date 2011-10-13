@@ -7,16 +7,21 @@
 	    <script src="jquery.js" type="text/javascript"></script>
     </head>
     <body>
-    	<canvas id="screen" width="700" height="300">
-    	</canvas>
-    	<div id="tasks">
+    	<div style="float: left;">
+	    	<canvas style="border: 1px solid #000000;" id="screen" width="500" height="500">
+	    	</canvas>
+	    	<br/>
+	    	<input type="button" value="GO!" onClick="go">
+    	</div>
+    	<div style="float: left;">
+	    	<div id="tasks">
+	    	</div>
     	</div>
     	<script>
     	
     		var canvas = document.getElementById("screen");
 	        var context = canvas.getContext("2d");
-	        
-	        var cfg_tasks = new Array(
+	        var _cfg_tasks = new Array(
 	        	    "frische hand- und geschirrtuecher: im lager, rechter gang links, 2.+3. regalfeld",
     				"waesche: lager, rechter gang links, 2. regalfeld, waschkorb",
     				"klopapier: getraenkelager. schluessel am schluesselbund in der lounge.",
@@ -24,8 +29,8 @@
     				"spuehlmaschinentabs: kueche unter der spuehle",
     				"frische putzlappen: kueche unter der spuehle",
     				"besen & putzzeug: damenklo",
-				    "muelltonnen: auf dem parkplatz vor der tuer: schwarz mit gelben deckel (restmuell) und blau (papier). schluessel am schluesselbund in der lounge.",
-				    "neue muellsaecke / gelbe saecke: lager, direkt gegenueber dem eingang",
+					"muelltonnen: auf dem parkplatz vor der tuer: schwarz mit gelben deckel (restmuell) und blau (papier). schluessel am schluesselbund in der lounge.",
+					"neue muellsaecke / gelbe saecke: lager, direkt gegenueber dem eingang",
     				"abholung gelbe saecke: der oberleitungsmast am parkplatz",
     				"eimer, putzmittel: damenklo",
     				"abfuhrtermin: kalender rechts neben dem matomaten.",
@@ -35,24 +40,49 @@
     				"bodenputzgeraet: putzwagen, mob, wasser, reiniger gibt's auf der damenklo"
 	        );
 	        
+	        // game loop
     		function loop(){
-	            
 	            // clear canvas
-	            context.font = 'Bold 30px Monospace';
+	            context.clearRect(0, 0, canvas.width, canvas.height); 
+	            // set font
+	            context.font = 'Normal 20px Monospace';
+	            // draw the numbers randomly
 	            drawNumbes(true);
 	        }
 	        
-	        
+	        // draws the numbers randomly
 	        function drawNumbes(random) {
-		        context.fillStyle = "rgb(200,0,0)"; 
-	            context.clearRect(0, 0, canvas.width, canvas.height); 
-				context.fillRect (10, 10, 55, 50); 
-	  			context.fillStyle = "rgb(0,0,0)"; 
-	  			context.fillText("1", 50, 50); 
+	        	// loop over all tasks from the config _cfg_tasks
+	        	for (_task_nr in _cfg_tasks)
+				{
+					var border = 20;
+					// generate random x coordinate minus a border
+					var _x = parseInt(Math.random()*(canvas.width-(border*2)));
+					// generate random x coordinate minus a border
+					var _y = parseInt(Math.random()*(canvas.height-(border*2)));
+					context.fillStyle = "rgb(255,0,0)";
+					context.fillRect (_x+border, _y+border-15, 20, 20); 
+		  			context.fillStyle = "rgb(0,0,0)"; 
+		  			context.fillText(_task_nr, _x+border, _y+border); 
+				}
+				window.setTimeout("loop()",100);
 	        }
 	        
 	        // init
 	        window.onload = function(){
+	        	
+	        	// create the task table from the config _cfg_tasks
+	        	var tmp_table = "";
+	        	tmp_table += "<table>"
+		    	for (_task_nr in _cfg_tasks)
+				{
+					tmp_table += "<tr><td><b>"+_task_nr+"</b></td><td>"+_cfg_tasks[_task_nr]+"</td></tr>";
+				}
+				tmp_table += "</table>"
+				// write the table in the 
+				var div_task_list = document.getElementById("tasks"); 
+				div_task_list.innerHTML = tmp_table;
+				
 	            canvas = document.getElementById("screen");
 	            window.setTimeout("loop()",100);
 	       }
