@@ -21,6 +21,8 @@
     	
     		var canvas = document.getElementById("screen");
 	        var context = canvas.getContext("2d");
+	        var _cfg_anz_particles = 20;
+	        var _cfg_anz_particle_waves = 10;
 	        var _cfg_tasks = new Array(
 	        	    "frische hand- und geschirrtuecher: im lager, rechter gang links, 2.+3. regalfeld",
     				"waesche: lager, rechter gang links, 2. regalfeld, waschkorb",
@@ -40,6 +42,64 @@
     				"bodenputzgeraet: putzwagen, mob, wasser, reiniger gibt's auf der damenklo"
 	        );
 	        
+	        var Particles = new Array();
+	        
+	        // method to update the particle position and age
+	        function updateParticle() {
+		        this.x += this.dx;
+		        this.y += this.dy;
+		        this.life -= 1;
+	        }
+	        
+	        // Particle Class
+	        function Particle (_x,_y,_dir,_speed,_life) {
+			    this.x = parseInt(_x);
+			    //alert(this.x)
+			    this.y = parseInt(_y);
+			    this.dir = _dir;
+			    this.speed = 2*_speed
+			    // calculate delta x and delta y for updates
+			    this.dx = Math.sin(this.dir)*this.speed;
+			    this.dy = Math.cos(this.dir)*this.speed;
+			    this.update = updateParticle;
+			    //        random age + minimum age
+			    this.life = 100*_life+50;
+			}
+			
+				   
+	        // init the particles
+	        function initParticles() {
+	        	// wenn X% oder weniger Partikel vorhanden sind, spawne neue, bis particle waves = 0 sind
+	        	if(Particles.length < _cfg_anz_particles/5 && _cfg_anz_particle_waves>0) {
+		        	_cfg_anz_particle_waves -= 1;
+			        for(i = 0; i<_cfg_anz_particles; ++i) {
+			        	// create Particles              center of screen               random direction
+				        Particles.push(new Particle(canvas.width/2, canvas.height/2, Math.random()*2*Math.PI,Math.random(),Math.random()));
+			        }
+		        }
+	        }
+	        
+	        // loop over the Particles update them and paint them on the screen
+	        function drawParticles() {
+	        	// begin draw line path
+		        context.beginPath();
+		        // loop over particles
+		        for(_particle in Particles) {
+		        	// get the current particle
+		        	p = Particles[_particle];
+			        p.update();
+			        // draw the line
+			        context.moveTo(p.x, p.y);
+					context.lineTo(p.x+p.dx*10, p.y+p.dy*10);
+					// delete if life is over
+					if(p.life <= 0) Particles.splice(_particle, 1);
+		        }
+		        // show the lines
+		       	context.fill();
+				context.stroke();
+				context.closePath();
+	        }
+	        
 	        // game loop
     		function loop(){
 	            // clear canvas
@@ -48,6 +108,10 @@
 	            context.font = 'Normal 20px Monospace';
 	            // draw the numbers randomly
 	            drawNumbes(true);
+	            // add particles
+	            initParticles()
+	            // update and draw particles
+	            drawParticles();
 	        }
 	        
 	        // draws the numbers randomly
@@ -65,10 +129,10 @@
 		  			context.fillStyle = "rgb(0,0,0)"; 
 		  			context.fillText(_task_nr, _x+border, _y+border); 
 				}
-				window.setTimeout("loop()",100);
+				window.setTimeout("loop()",10);
 	        }
 	        
-	        // init
+	        // START and init 
 	        window.onload = function(){
 	        	
 	        	// create the task table from the config _cfg_tasks
@@ -82,9 +146,13 @@
 				// write the table in the 
 				var div_task_list = document.getElementById("tasks"); 
 				div_task_list.innerHTML = tmp_table;
-				
-	            canvas = document.getElementById("screen");
+				// line drawing inits
+	            context.strokeStyle = '#000';
+				context.lineWidth   = 2;
+			    context.fillStyle = "rgb(0,0,0)"; 
+			    
 	            window.setTimeout("loop()",100);
+	            initParticles();
 	       }
     	</script>
   	</body>
