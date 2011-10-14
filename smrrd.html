@@ -9,6 +9,7 @@
     	<div id="header">putzen.shack //<i>smrrd</i> <img style="float: right;" src="http://shackspace.de/wiki/lib/tpl/minimalism20091028/images/logo_shack_brightbg_190px.png" width="150"></div>
     	<div style="float: left;">
 	    	<canvas style="border-right: 2px solid #999999; margin-top: 0px;" id="screen" width="500" height="500">
+	    	<img src="rainbow.png">
 	    	</canvas>
     	</div>
     	<div style="float: left; margin-top: 10px;">
@@ -16,7 +17,8 @@
 	    	</div>
 	    	<div style="border-top: 2px solid #999999; border-bottom: 2px solid #999999; padding: 10px 20px;">
 	    	[SPACE] get random task or <input type="button" value="GO!" onClick="GO()"><br>
-	    	[reload] restart
+	    	[reload] restart &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <input type="checkbox" id="rainbow"> SHOW RAINBOW BACKGROUND!
+	    	
 	    	</div>
 	    	<div id="task_list" style="width: 600px; padding: 2px;">
 	   		</div>
@@ -28,8 +30,17 @@
     	<script>
     		var onThisTab;
     		var gameLoop;
+    		
     		// INIT,RANDOMIZE,PARTICLE,REMOVE
     		var STATE = "INIT";
+    		var myImage = new Image();
+    		bgloaded = false;
+			myImage.onload = function() {
+				bgloaded=true;
+			}
+			myImage.src = "rainbow.png"
+			
+			document.onkeydown = getKeyCode;
 
 			window.onfocus = function () { 
 			  onThisTab = true; 
@@ -239,6 +250,7 @@
     		function loop(){
 	            // clear canvas
 	            context.clearRect(0, 0, canvas.width, canvas.height); 
+				if(bgloaded && document.getElementById("rainbow").checked) context.drawImage(myImage,0,0); 
 	            // set font
 	            context.font = 'Normal 20px Monospace';
 	            // draw the numbers randomly
@@ -284,7 +296,9 @@
 			   };
 			   
 			}
-			document.onkeydown = getKeyCode;
+			
+			
+			
 			
     	</script>
   	</body>
