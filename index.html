@@ -4,14 +4,13 @@
 	    <title>putzen.shack</title>
 	    <link rel="stylesheet" type="text/css" href="style.css">
 	    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	    <script src="jquery.js" type="text/javascript"></script>
     </head>
     <body>
     	<div style="float: left;">
 	    	<canvas style="border: 1px solid #000000;" id="screen" width="500" height="500">
 	    	</canvas>
 	    	<br/>
-	    	<input type="button" value="GO!" onClick="GO()"> <div id="debug"></div>
+	    	<input type="button" value="GO!" onClick="GO()"> <span id="debug"></span> <span id="debug2"></span>
     	</div>
     	<div style="float: left;">
 	    	<div id="tasks" style="width: 600px;">
@@ -67,9 +66,18 @@
 	        var Particles = new Array();
 	        var Tasks = new Array();
 	        
+	        // function for debug Prints
+	        function debug(error){
+		        document.getElementById("debug2").innerHTML = error;
+	        }
+	        
 	        // method to update the particle position and age
 	        function updateParticle() {
+	        
 		        this.x += this.dx;
+		        if(this.gravity) { 
+		        	// TODO: implement gravity
+		        }
 		        this.y += this.dy;
 		        // Walldetection
 		        if(this.x > canvas.width) this.dx = -this.dx;
@@ -80,15 +88,15 @@
 		        // colission detection
 		        hit = false;
 		        for (_task in Tasks) {
-					if((this.x>Tasks[_task].x && this.x<Tasks[_task].x+20) && (this.y>Tasks[_task].y && this.y<Tasks[_task].y+20)) {
+					if(this.hitter && (this.x>Tasks[_task].x && this.x<Tasks[_task].x+20) && (this.y>Tasks[_task].y && this.y<Tasks[_task].y+20)) {
 						Tasks[_task].hits += 1;
 						hit = true;
-						// update table points
-						document.getElementById("Points_Task_"+Tasks[_task].id).innerHTML = Tasks[_task].hits;
+						addParticles(Particles[_particle].x,Particles[_particle].y,"rgb(255,0,0)",2,1,false,true);
+						// leave loop, because particle hit a number
 						break;
 					}
 				}
-				if(p.life <= 0 || hit) Particles.splice(_particle, 1);
+				if(p.life <= 0 || hit) Particles.splice(_particle, 1);       
 	        }
 	        
 	        // print the table of tasks
@@ -106,9 +114,13 @@
 	        }
 	        
 	        // Particle Class
-	        function /*CLASS*/ Particle (_x,_y,_dir,_speed,_life) {
+	        function /*CLASS*/ Particle (_x,_y,_dir,_speed,_life,_color,_w,_hitter,_gravity) {
 			    this.x = parseInt(_x);
 			    this.y = parseInt(_y);
+			    this.color = _color; // Particle Farbe
+			    this.w = _w; // breite
+			    this.gravity = _gravity; // will be affected by gravity
+			    this.hitter = _hitter; // can hit numbers?
 			    this.dir = _dir; // speed multiplier + random(0,1) + base speed (10%)
 			    this.speed = _cfg_particle_speed*_speed+_cfg_particle_speed/10;
 			    // calculate delta x and delta y for updates
@@ -127,33 +139,22 @@
 			    this.text = _text;
 			    this.hits = 0;
 			}
-				   
+			
+			// add new particles to particlesystem			
+			function addParticles(_x,_y,_color,_n,_w,_hitter,_gravity) {
+				for(i = 0; i<_n; ++i) {
+					Particles.push(new Particle(_x,_y,Math.random()*2*Math.PI,Math.random(),Math.random(),_color,_w,_hitter,_gravity));
+				}
+			}
+			
 	        // init the particles
 	        function initParticles() {
 	        	// wenn X% oder weniger Partikel vorhanden sind, spawne neue, bis particle waves = 0 sind
 	        	if(Particles.length < _cfg_anz_particles/3 && particle_waves>0) {
 		        	particle_waves -= 1;
-			        for(i = 0; i<_cfg_anz_particles; ++i) {
-			        	// create Particles              center of screen               random direction
-				        Particles.push(new Particle(canvas.width/2, canvas.height/2,Math.random()*2*Math.PI,Math.random(),Math.random()));
-			        }
+		        	addParticles(canvas.width/2, canvas.height/2,"rgb(0,0,0)",_cfg_anz_particles,2,true,false)
 		        } else if (Particles.length <= 0 && particle_waves<=0) {
-			        STATE = "REMOVE";
-			        // find highest score
-			        highest_id = 0;
-			        highest_hits = 0;
-			        for (_task in Tasks) {
-			        	if(Tasks[_task].hits > highest_hits) {
-				        	highest_id = Tasks[_task].id;
-				        	highest_hits = Tasks[_task].hits;
-			        	}
-			        }
-			        // remove from task table
-			        Tasks.splice(highest_id, 1);
-			        //alert(highest_id);
-			        tr = document.getElementById("Task_"+highest_id);
-			        document.getElementById("task_list").innerHTML+=""+Tasks[highest_id].id+": "+Tasks[highest_id].text;
-			        tr.parentNode.removeChild(tr);
+			        if(STATE == "PARTICLE") STATE = "REMOVE";
 		        }
 	        }
 	        
@@ -165,6 +166,7 @@
 	        }
 	        
 	        // loop over the Particles update them and paint them on the screen
+	        // TODO: fix drawing bug for different colors and widths
 	        function drawParticles() {
 	        	// begin draw line path
 		        context.beginPath();
@@ -173,10 +175,13 @@
 		        	// get the current particle
 		        	p = Particles[_particle];
 			        p.update();
+			        context.strokeStyle = p.color;
+					//context.lineWidth   = p.w; <-- BUG
+					context.lineWidth   = 2;
+			   		context.fillStyle = p.color; 
 			        // draw the line
 			        context.moveTo(p.x, p.y);
 					context.lineTo(p.x+p.dx/2*5, p.y+p.dy/2*5);
-					// delete if life is over
 					
 		        }
 		        // show the lines
@@ -188,7 +193,22 @@
 	        // draws the numbers randomly
 	        function drawTasks(random) {
 	        	// loop over all tasks from the config _cfg_tasks
-	        	
+	        	if(STATE == "REMOVE") {
+		        	highest_i = 0;
+				    highest_hits = 0;
+				    for (_task in Tasks) {
+				        if(Tasks[_task].hits > highest_hits) {
+					        highest_i = _task;
+					        highest_hits = Tasks[_task].hits;
+				        }
+				    }
+				    // remove from task table
+				    tr = document.getElementById("Task_"+Tasks[highest_i].id);
+				    document.getElementById("task_list").innerHTML = "<b>"+Tasks[highest_i].id+"</b>: "+Tasks[highest_i].text+" <b>("+Tasks[highest_i].hits+")</b></br>"+document.getElementById("task_list").innerHTML;
+				    tr.parentNode.removeChild(tr);
+				    Tasks.splice(highest_i, 1);
+				    STATE = "REMOVED";
+				}
 	        	for (_task in Tasks)
 				{
 					var border = 20;
@@ -197,12 +217,18 @@
 					// generate random x coordinate minus a border
 					if(random) Tasks[_task].y = parseInt(Math.random()*(canvas.height-(border*2)))+border-15;
 					if(STATE == "RANDOMIZE") Tasks[_task].hits = 0;
-					context.fillStyle = "rgb(255,0,0)";
 					//context.fillRect (Tasks[_task].x, Tasks[_task].y, 20, 20); 
 		  			context.fillStyle = "rgb(0,0,0)"; 
 		  			context.fillText(Tasks[_task].id, Tasks[_task].x+border-20, Tasks[_task].y+border-3); 
 				}
 				
+	        }
+	        
+	        function updateTasks() {
+		        for (_task in Tasks)
+				{
+					document.getElementById("Points_Task_"+Tasks[_task].id).innerHTML = Tasks[_task].hits;
+				}
 	        }
 	        
 	        // game loop
@@ -213,16 +239,17 @@
 	            context.font = 'Normal 20px Monospace';
 	            // draw the numbers randomly
 	            if(STATE=="RANDOMIZE") drawTasks(true);
-	            if(STATE=="PARTICLE" || STATE=="REMOVE") drawTasks(false);
+	            if(STATE=="PARTICLE" || STATE=="REMOVE" || STATE=="REMOVED") drawTasks(false);
 	            // add particles
 	            if(STATE=="RANDOMIZE") particle_waves = _cfg_anz_particle_waves;
 	            if(STATE=="PARTICLE") initParticles();
 	            // update and draw particles
 	            if(STATE=="PARTICLE") drawParticles();
-	            
-	            if(onThisTab) gameLoop = window.setTimeout("loop()",10);
+	            if(STATE=="PARTICLE") updateTasks()
+	            //document.getElementById("debug").innerHTML = STATE+" / "+particle_waves+" / "+Tasks.length+" /"+onThisTab;
+	            if(onThisTab) gameLoop = window.setTimeout("loop()",12);
 	            //window.setTimeout("loop()",10);
-	            document.getElementById("debug").innerHTML = STATE+" / "+particle_waves+" / "+Particles.length+" /"+onThisTab;
+	           
 	        }
 	        
 	        
@@ -243,8 +270,17 @@
 	       function GO() {
 		       // draw the numbers randomly
 	           if(STATE == "RANDOMIZE") STATE = "PARTICLE";
-	           else if(STATE == "REMOVE") STATE = "RANDOMIZE";
+	           else if(STATE == "REMOVED") STATE = "RANDOMIZE";
 	       }
+	       function getKeyCode(event) {
+			   event = event || window.event;
+			   if(event.keyCode == 32) {
+				   GO();
+				   return false;
+			   };
+			   
+			}
+			document.onkeydown = getKeyCode;
     	</script>
   	</body>
 </head>
